@@ -1,9 +1,19 @@
-backup = "2014-10-14_000005"
+#!/usr/bin/ruby
+
+def debug msg
+  puts "DEBUG: #{msg}"
+end
+
+backup = ARGV[0]
+
+unless backup
+  puts "Usage: ./insanity.rb <path to forge backup directory>"
+  exit 1
+end
 
 module_dirs = `ls -1 #{backup}`.split.select { |x|
   File.directory? "#{backup}/#{x}"
 }
-puts "Found #{module_dirs.count} module_dirs"
 
 unique_modules = []
 module_names_with_multiple_versions = []
@@ -15,7 +25,6 @@ module_dirs.each { |module_dir|
 		# multiple versions
 
     stop_index = stop_index - 2 # take off the version entirely
-    #puts "stop index is #{stop_index}"
 
     mod = module_dir[0..stop_index]
     module_names_with_multiple_versions << mod
@@ -40,8 +49,6 @@ module_names_with_multiple_versions.uniq.each { |module_name|
     versions.each { |version|
 
       result = /[0-9]+\.[0-9]+\.[0-9]+/.match(version)[0].split(".")
-      # puts "found version: #{major}.#{minor}.#{micro}"
-      #puts "found result: #{result.inspect}"
 
       is_beta = version.match(/rc[0-9]$/) or version.end_with? "beta"
 
@@ -98,21 +105,11 @@ module_names_with_multiple_versions.uniq.each { |module_name|
   end
 
   unless chosen_version
-    puts "failed to choose version for module #{module_name}"
-    exit -1
+    raise "failed to choose version for module #{module_name}"
   end
-
-  puts "For module #{module_name}, found all versions: #{all_versions} and chose #{chosen_version}"
 
   unique_modules << chosen_version
 }
 
-# puts "here is a recent version of every module:"
-# puts unique_modules
-
-puts "found #{unique_modules.count} unique modules"
-
-unique_modules.each { |m|
-  `cp -R #{backup}/#{m} unique-modules`
-}
+puts unique_modules
 
